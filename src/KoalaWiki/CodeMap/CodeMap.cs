@@ -249,105 +249,217 @@ namespace KoalaWiki.CodeMap
             return BuildFunctionDependencyTree(normalizedPath, functionName, visited, 0);
         }
 
+        /// <summary>
+        /// 构建文件依赖关系树
+        /// 该方法递归构建指定文件的依赖关系树，包括其依赖的文件和包含的函数
+        /// 使用深度优先搜索算法，支持循环依赖检测和最大深度限制
+        /// 
+        /// 【逻辑原理】
+        /// 1. 基于图论中的深度优先搜索(DFS)算法
+        /// 2. 将文件依赖关系建模为有向图，文件为节点，依赖关系为边
+        /// 3. 使用访问标记集合(HashSet)检测循环依赖
+        /// 4. 采用递归方式遍历依赖图，构建树形结构
+        /// 
+        /// 【输入参数】
+        /// - filePath: 要分析依赖关系的文件路径（绝对路径）
+        /// - visited: 已访问文件的集合，用于循环依赖检测
+        /// - level: 当前递归深度，用于控制最大深度
+        /// - maxDepth: 最大递归深度限制，防止无限递归（默认10层）
+        /// 
+        /// 【输出结果】
+        /// - DependencyTree: 文件依赖关系树，包含：
+        ///   * 文件基本信息（名称、路径、行号）
+        ///   * 循环依赖标记
+        ///   * 子文件依赖列表（递归结构）
+        ///   * 文件中包含的函数列表
+        /// 
+        /// 【过程逻辑】
+        /// 1. 边界检查：检查深度限制和循环依赖
+        /// 2. 节点创建：初始化当前文件的依赖树节点
+        /// 3. 依赖遍历：递归处理所有依赖文件
+        /// 4. 函数收集：收集当前文件中的所有函数信息
+        /// 5. 树形构建：组装完整的依赖关系树
+        /// </summary>
+        /// <param name="filePath">要分析依赖关系的文件路径</param>
+        /// <param name="visited">已访问的文件集合，用于检测循环依赖</param>
+        /// <param name="level">当前递归深度，用于控制最大深度</param>
+        /// <param name="maxDepth">最大递归深度，默认为10层，防止无限递归</param>
+        /// <returns>表示文件依赖关系的树形结构</returns>
         private DependencyTree BuildFileDependencyTree(string filePath, HashSet<string> visited, int level, int maxDepth = 10)
         {
+            // ===== 步骤1：深度和循环依赖检查 =====
+            // 检查是否超过最大深度或已经访问过该文件（循环依赖检测）
             if (level > maxDepth || !visited.Add(filePath))
             {
+                // 创建循环依赖节点，标记为已访问
                 return new DependencyTree
                 {
-                    NodeType = DependencyNodeType.File,
-                    Name = Path.GetFileName(filePath),
-                    FullPath = filePath,
-                    IsCyclic = visited.Contains(filePath)
+                    NodeType = DependencyNodeType.File,  // 节点类型：文件
+                    Name = Path.GetFileName(filePath),    // 文件名（不含路径）
+                    FullPath = filePath,                  // 完整文件路径
+                    IsCyclic = visited.Contains(filePath) // 标记是否为循环依赖
                 };
             }
 
+            // ===== 步骤2：创建文件依赖树节点 =====
+            // 创建当前文件的依赖树节点，初始化基本信息
             var tree = new DependencyTree
             {
-                NodeType = DependencyNodeType.File,
-                Name = Path.GetFileName(filePath),
-                FullPath = filePath,
-                IsCyclic = false,
-                Children = new List<DependencyTree>()
+                NodeType = DependencyNodeType.File,       // 节点类型：文件
+                Name = Path.GetFileName(filePath),        // 文件名（不含路径）
+                FullPath = filePath,                      // 完整文件路径
+                IsCyclic = false,                        // 初始化为非循环依赖
+                Children = new List<DependencyTree>()     // 初始化子节点列表
             };
             
-            // 添加子文件依赖
+            // ===== 步骤3：添加子文件依赖 =====
+            // 查找当前文件的所有依赖文件，并递归构建子依赖树
             if (_fileDependencies.TryGetValue(filePath, out var dependencies))
             {
+                // 遍历当前文件的所有依赖文件
                 foreach (var dependency in dependencies)
                 {
+                    // 为每个子节点创建独立的访问集合，避免相互影响
                     var childVisited = new HashSet<string>(visited);
+                    // 递归构建子文件的依赖树
                     var child = BuildFileDependencyTree(dependency, childVisited, level + 1, maxDepth);
+                    // 将子依赖树添加到当前节点的子节点列表中
                     tree.Children.Add(child);
                 }
             }
             
-            // 添加文件中的函数
+            // ===== 步骤4：添加文件中的函数信息 =====
+            // 查找当前文件中包含的所有函数，并添加到依赖树中
             if (_fileToFunctions.TryGetValue(filePath, out var functions))
             {
+                // 遍历文件中的所有函数
                 foreach (var function in functions)
                 {
+                    // 创建函数信息节点，包含函数名和行号
                     tree.Functions.Add(new DependencyTreeFunction
                     {
-                        Name = function.Name,
-                        LineNumber = function.LineNumber
+                        Name = function.Name,        // 函数名称
+                        LineNumber = function.LineNumber  // 函数在文件中的行号
                     });
                 }
             }
             
+            // ===== 步骤5：返回构建完成的依赖树 =====
+            // 返回包含完整依赖关系的树形结构
             return tree;
         }
 
+        /// <summary>
+        /// 构建函数依赖关系树
+        /// 该方法递归构建指定函数的依赖关系树，包括其调用的其他函数
+        /// 使用深度优先搜索算法，支持循环依赖检测和最大深度限制
+        /// 
+        /// 【逻辑原理】
+        /// 1. 基于函数调用图的深度优先搜索(DFS)算法
+        /// 2. 将函数调用关系建模为有向图，函数为节点，调用关系为边
+        /// 3. 使用"文件路径:函数名"格式创建函数唯一标识符
+        /// 4. 通过访问标记集合检测函数间的循环调用
+        /// 5. 采用递归方式遍历调用图，构建函数依赖树
+        /// 
+        /// 【输入参数】
+        /// - filePath: 包含要分析函数的文件路径（绝对路径）
+        /// - functionName: 要分析依赖关系的函数名称
+        /// - visited: 已访问函数的集合，用于循环依赖检测
+        /// - level: 当前递归深度，用于控制最大深度
+        /// - maxDepth: 最大递归深度限制，防止无限递归（默认10层）
+        /// 
+        /// 【输出结果】
+        /// - DependencyTree: 函数依赖关系树，包含：
+        ///   * 函数基本信息（名称、路径、行号）
+        ///   * 循环依赖标记
+        ///   * 被调用函数列表（递归结构）
+        ///   * 函数调用链的完整路径
+        /// 
+        /// 【过程逻辑】
+        /// 1. 标识符构建：创建函数的唯一标识符
+        /// 2. 边界检查：检查深度限制和循环依赖
+        /// 3. 节点创建：初始化当前函数的依赖树节点
+        /// 4. 函数查找：在文件函数映射中查找目标函数
+        /// 5. 调用解析：解析函数中的所有函数调用
+        /// 6. 递归构建：为每个被调用函数递归构建依赖树
+        /// 7. 树形组装：组装完整的函数调用关系树
+        /// </summary>
+        /// <param name="filePath">包含要分析函数的文件路径</param>
+        /// <param name="functionName">要分析依赖关系的函数名称</param>
+        /// <param name="visited">已访问的函数集合，用于检测循环依赖</param>
+        /// <param name="level">当前递归深度，用于控制最大深度</param>
+        /// <param name="maxDepth">最大递归深度，默认为10层，防止无限递归</param>
+        /// <returns>表示函数依赖关系的树形结构</returns>
         private DependencyTree BuildFunctionDependencyTree(string filePath, string functionName, HashSet<string> visited, int level, int maxDepth = 10)
         {
+            // ===== 步骤1：构建函数唯一标识符 =====
+            // 使用"文件路径:函数名"的格式创建函数的唯一标识符
+            // 这样可以区分不同文件中同名的函数
             var fullFunctionId = $"{filePath}:{functionName}";
             
+            // ===== 步骤2：深度和循环依赖检查 =====
+            // 检查是否超过最大深度或已经访问过该函数（循环依赖检测）
             if (level > maxDepth || !visited.Add(fullFunctionId))
             {
+                // 创建循环依赖节点，标记为已访问
                 return new DependencyTree
                 {
-                    NodeType = DependencyNodeType.Function,
-                    Name = functionName,
-                    FullPath = fullFunctionId,
-                    IsCyclic = visited.Contains(fullFunctionId)
+                    NodeType = DependencyNodeType.Function,  // 节点类型：函数
+                    Name = functionName,                     // 函数名称
+                    FullPath = fullFunctionId,               // 函数唯一标识符
+                    IsCyclic = visited.Contains(fullFunctionId) // 标记是否为循环依赖
                 };
             }
 
+            // ===== 步骤3：创建函数依赖树节点 =====
+            // 创建当前函数的依赖树节点，初始化基本信息
             var tree = new DependencyTree
             {
-                NodeType = DependencyNodeType.Function,
-                Name = functionName,
-                FullPath = fullFunctionId,
-                IsCyclic = false,
-                Children = new List<DependencyTree>()
+                NodeType = DependencyNodeType.Function,  // 节点类型：函数
+                Name = functionName,                     // 函数名称
+                FullPath = fullFunctionId,               // 函数唯一标识符
+                IsCyclic = false,                       // 初始化为非循环依赖
+                Children = new List<DependencyTree>()    // 初始化子节点列表
             };
             
-            // 找到当前函数的信息
+            // ===== 步骤4：查找当前函数信息并解析调用关系 =====
+            // 在文件函数映射中查找当前函数的信息
             if (_fileToFunctions.TryGetValue(filePath, out var functions))
             {
+                // 查找指定名称的函数
                 var function = functions.FirstOrDefault(f => f.Name == functionName);
                 if (function != null)
                 {
+                    // ===== 步骤4.1：设置函数行号 =====
+                    // 记录函数在文件中的行号，便于定位和调试
                     tree.LineNumber = function.LineNumber;
                     
-                    // 解析函数调用
+                    // ===== 步骤4.2：解析函数调用关系 =====
+                    // 遍历当前函数调用的所有其他函数
                     foreach (var calledFunction in function.Calls)
                     {
-                        // 尝试解析被调用函数的完整路径
+                        // 尝试解析被调用函数的完整路径信息
+                        // ResolveFunctionCall方法会查找被调用函数所在的文件和具体位置
                         var resolvedFunction = ResolveFunctionCall(calledFunction, filePath);
                         if (resolvedFunction != null)
                         {
+                            // 获取被调用函数的文件路径和函数名
                             var calledFilePath = resolvedFunction.FilePath;
                             var calledFunctionName = resolvedFunction.Name;
                             
+                            // 为每个子函数创建独立的访问集合，避免相互影响
                             var childVisited = new HashSet<string>(visited);
+                            // 递归构建被调用函数的依赖树
                             var child = BuildFunctionDependencyTree(calledFilePath, calledFunctionName, childVisited, level + 1, maxDepth);
+                            // 将被调用函数的依赖树添加到当前函数的子节点列表中
                             tree.Children.Add(child);
                         }
                     }
                 }
             }
             
+            // ===== 步骤5：返回构建完成的函数依赖树 =====
+            // 返回包含完整函数调用关系的树形结构
             return tree;
         }
 
