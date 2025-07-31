@@ -17,13 +17,18 @@ python-multipart==0.0.6
 pydantic==2.5.0
 pydantic-settings==2.1.0
 
+# HTTP客户端（OAuth需要）
+httpx==0.25.2
+
+# JWT处理（OIDC需要）
+PyJWT==2.8.0
+
 # 日志
 python-json-logger==2.0.7
 
 # 测试
 pytest==7.4.3
 pytest-asyncio==0.21.1
-httpx==0.25.2
 
 # 开发工具
 black==23.11.0

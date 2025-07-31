@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from config.settings import get_settings
 from db.database.factory import init_database, get_db, close_db
 from db.storage.factory import init_storage, close_storage, get_storage
-from api import users, auth, roles, avatar
+from api import users, auth, roles, avatar, oauth
 from logger.logger import logger
 
 # 获取配置
@@ -79,6 +79,7 @@ app.include_router(users.router, prefix="/api/v1/users", tags=["用户管理"])
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["认证管理"])
 app.include_router(roles.router, prefix="/api/v1/roles", tags=["角色管理"])
 app.include_router(avatar.router, prefix="/api/v1/avatar", tags=["头像管理"])
+app.include_router(oauth.router, prefix="/api/v1/oauth", tags=["第三方登录"])
 
 # 全局异常处理
 @app.exception_handler(Exception)

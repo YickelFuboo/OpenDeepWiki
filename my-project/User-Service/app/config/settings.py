@@ -124,6 +124,93 @@ class SecuritySettings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
 
+
+class OAuthProviderConfig(BaseSettings):
+    """单个OAuth提供商配置"""
+    
+    type: str = Field(default="oauth2")  # oauth2, oidc, github
+    icon: str = Field(default="sso")  # github, sso, google, wechat, alipay
+    display_name: str = Field(default="")
+    client_id: str = Field(default="")
+    client_secret: str = Field(default="")
+    authorization_url: str = Field(default="")
+    token_url: str = Field(default="")
+    userinfo_url: str = Field(default="")
+    issuer: str = Field(default="")  # 仅OIDC使用
+    scope: str = Field(default="")  # 可配置的scope
+    redirect_uri: str = Field(default="")
+    is_active: bool = Field(default=True)
+    
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+
+
+class OAuthSettings(BaseSettings):
+    """OAuth配置 - 支持动态提供商"""
+    
+    # 启用OAuth功能
+    enabled: bool = Field(default=True, env="OAUTH_ENABLED")
+    
+    # 默认配置（向后兼容）
+    github_client_id: str = Field(default="", env="GITHUB_CLIENT_ID")
+    github_client_secret: str = Field(default="", env="GITHUB_CLIENT_SECRET")
+    github_redirect_uri: str = Field(default="", env="GITHUB_REDIRECT_URI")
+    
+    google_client_id: str = Field(default="", env="GOOGLE_CLIENT_ID")
+    google_client_secret: str = Field(default="", env="GOOGLE_CLIENT_SECRET")
+    google_redirect_uri: str = Field(default="", env="GOOGLE_REDIRECT_URI")
+    
+    wechat_app_id: str = Field(default="", env="WECHAT_APP_ID")
+    wechat_app_secret: str = Field(default="", env="WECHAT_APP_SECRET")
+    wechat_redirect_uri: str = Field(default="", env="WECHAT_REDIRECT_URI")
+    
+    # 支付宝 OAuth
+    alipay_app_id: str = Field(default="", env="ALIPAY_APP_ID")
+    alipay_private_key: str = Field(default="", env="ALIPAY_PRIVATE_KEY")
+    alipay_public_key: str = Field(default="", env="ALIPAY_PUBLIC_KEY")
+    alipay_redirect_uri: str = Field(default="", env="ALIPAY_REDIRECT_URI")
+    
+    # OIDC配置
+    oidc_client_id: str = Field(default="", env="OIDC_CLIENT_ID")
+    oidc_client_secret: str = Field(default="", env="OIDC_CLIENT_SECRET")
+    oidc_redirect_uri: str = Field(default="", env="OIDC_REDIRECT_URI")
+    oidc_issuer: str = Field(default="", env="OIDC_ISSUER")
+    
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+
+
+class SMSSettings(BaseSettings):
+    """短信服务配置"""
+    
+    provider: str = Field(default="aliyun", env="SMS_PROVIDER")
+    access_key_id: str = Field(default="", env="SMS_ACCESS_KEY_ID")
+    access_key_secret: str = Field(default="", env="SMS_ACCESS_KEY_SECRET")
+    sign_name: str = Field(default="", env="SMS_SIGN_NAME")
+    template_code: str = Field(default="", env="SMS_TEMPLATE_CODE")
+    
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+
+
+class EmailSettings(BaseSettings):
+    """邮件服务配置"""
+    
+    host: str = Field(default="smtp.gmail.com", env="EMAIL_HOST")
+    port: int = Field(default=587, env="EMAIL_PORT")
+    username: str = Field(default="", env="EMAIL_USERNAME")
+    password: str = Field(default="", env="EMAIL_PASSWORD")
+    use_tls: bool = Field(default=True, env="EMAIL_USE_TLS")
+    from_email: str = Field(default="", env="EMAIL_FROM")
+    
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+
+
 class Settings(BaseSettings):
     """主配置类"""
     
@@ -141,6 +228,9 @@ class Settings(BaseSettings):
     storage: StorageSettings = StorageSettings()
     jwt: JWTSettings = JWTSettings()
     security: SecuritySettings = SecuritySettings()
+    oauth: OAuthSettings = OAuthSettings()
+    sms: SMSSettings = SMSSettings()
+    email: EmailSettings = EmailSettings()
     
     class Config:
         env_file = ".env"
