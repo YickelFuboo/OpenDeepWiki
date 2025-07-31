@@ -42,11 +42,10 @@ class DatabaseSettings(BaseSettings):
 class S3Settings(BaseSettings):
     """S3存储配置"""
     
-    bucket_name: str = Field(default="user-service", env="S3_BUCKET_NAME")
     region: str = Field(default="us-east-1", env="S3_REGION")
+    endpoint_url: str = Field(default="", env="S3_ENDPOINT_URL")  # 必需，指定S3兼容服务的端点
     access_key_id: str = Field(default="", env="S3_ACCESS_KEY_ID")
     secret_access_key: str = Field(default="", env="S3_SECRET_ACCESS_KEY")
-    endpoint_url: str = Field(default="", env="S3_ENDPOINT_URL")  # 必需，指定S3兼容服务的端点
     use_ssl: bool = Field(default=True, env="S3_USE_SSL")
     
     class Config:
@@ -60,7 +59,6 @@ class MinIOSettings(BaseSettings):
     endpoint: str = Field(default="localhost:9000", env="MINIO_ENDPOINT")
     access_key: str = Field(default="minioadmin", env="MINIO_ACCESS_KEY")
     secret_key: str = Field(default="minioadmin", env="MINIO_SECRET_KEY")
-    bucket_name: str = Field(default="user-service", env="MINIO_BUCKET_NAME")
     secure: bool = Field(default=True, env="MINIO_SECURE")
     
     class Config:

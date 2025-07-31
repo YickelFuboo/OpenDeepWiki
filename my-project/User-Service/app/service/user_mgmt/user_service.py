@@ -13,7 +13,7 @@ from db.database.models.user import User, UserInRole, Role
 from api.schemes.user import UserCreate, UserUpdate, UserResponse
 from api.schemes.common import PaginationParams, PaginatedResponse
 from service.user_mgmt.password import hash_password, verify_password
-from db.storage.factory import get_storage
+from db.storage.factory import get_storage, upload_file_with_bucket, get_file_url_with_bucket
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ class UserService:
             if user.avatar:
                 try:
                     storage = get_storage()
-                    avatar_url = storage.get_file_url(user.avatar)
+                    avatar_url = storage.get_file_url(user.avatar, bucket_name="user-avatars")
                 except Exception as e:
                     logger.warning(f"获取用户头像URL失败: {e}")
             
@@ -292,7 +292,7 @@ class UserService:
         
         try:
             storage = get_storage()
-            return storage.get_file_url(user.avatar)
+            return storage.get_file_url(user.avatar, bucket_name="user-avatars")
         except Exception as e:
             logger.error(f"获取头像URL失败: {e}")
             return None
@@ -347,14 +347,13 @@ class UserService:
                     detail="图片格式不支持"
                 )
             
-            # 获取存储实例
+            # 获取存储实例并上传文件
             storage = get_storage()
-            
-            # 上传文件到存储
             file_id = storage.upload_file(
                 file_data=processed_image,
                 file_name=avatar_filename,
-                content_type='image/jpeg'
+                content_type='image/jpeg',
+                bucket_name="user-avatars"
             )
             
             # 更新用户头像信息 - 存储file_id
@@ -364,7 +363,7 @@ class UserService:
                 self.db.commit()
             
             # 返回访问URL供前端使用
-            avatar_url = storage.get_file_url(file_id)
+            avatar_url = storage.get_file_url(file_id, bucket_name="user-avatars")
             return avatar_url
             
         except HTTPException:
@@ -373,4 +372,64 @@ class UserService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="上传头像失败"
+            ) 
+
+    def upload_user_favorite(self, user_id: str, file: UploadFile) -> str:
+        """上传用户收藏文件"""
+        try:
+            # 验证文件
+            if file.size > 50 * 1024 * 1024:  # 50MB
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="文件大小不能超过50MB"
+                )
+            
+            # 上传到用户收藏目录
+            storage = get_storage()
+            file_id = storage.upload_file(
+                file_data=file.file,
+                file_name=file.filename,
+                content_type=file.content_type,
+                bucket_name="user-files"
+            )
+            
+            return storage.get_file_url(file_id, bucket_name="user-files")
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="上传收藏文件失败"
+            )
+    
+    def upload_user_document(self, user_id: str, file: UploadFile) -> str:
+        """上传用户文档"""
+        try:
+            # 验证文件类型
+            allowed_types = ["application/pdf", "application/msword", 
+                           "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]
+            if file.content_type not in allowed_types:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="只支持PDF和Word文档"
+                )
+            
+            # 上传到用户文档目录
+            storage = get_storage()
+            file_id = storage.upload_file(
+                file_data=file.file,
+                file_name=file.filename,
+                content_type=file.content_type,
+                bucket_name="user-files"
+            )
+            
+            return storage.get_file_url(file_id, bucket_name="user-files")
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="上传文档失败"
             ) 

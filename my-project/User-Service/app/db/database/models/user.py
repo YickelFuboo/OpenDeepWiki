@@ -25,6 +25,7 @@ class User(Base, TimestampMixin):
     
     # 关联关系
     user_roles = relationship("UserInRole", back_populates="user")
+    files = relationship("FileMetadata", back_populates="user")
     
     def __repr__(self):
         return f"<User(id={self.id}, username={self.username}, email={self.email})>"

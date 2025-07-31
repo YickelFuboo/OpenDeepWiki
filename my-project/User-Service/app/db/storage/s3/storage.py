@@ -18,24 +18,24 @@ logger = logging.getLogger(__name__)
 class S3Storage(StorageInterface):
     """S3存储实现"""
     
-    def __init__(self, bucket_name: str, region: str, access_key_id: str, 
-                 secret_access_key: str, endpoint_url: str, use_ssl: bool = True):
+    def __init__(self, endpoint_url: str = None, region: str = None, access_key_id: str = None,
+                 secret_access_key: str = None, use_ssl: bool = True):
         """
         初始化S3存储
         
         Args:
-            bucket_name: S3存储桶名称
-            region: 存储区域
+            bucket_name: 存储桶名称（可选，使用时动态指定）
+            region: 区域
             access_key_id: 访问密钥ID
             secret_access_key: 秘密访问密钥
-            endpoint_url: S3兼容服务的端点URL（必需）
-            use_ssl: 是否使用SSL连接
+            endpoint_url: 端点URL
+            use_ssl: 是否使用SSL
         """
-        if not endpoint_url:
-            raise ValueError("S3存储必须指定endpoint_url")
-            
-        self.bucket_name = bucket_name
         self.region = region
+        self.access_key_id = access_key_id
+        self.secret_access_key = secret_access_key
+        self.endpoint_url = endpoint_url
+        self.use_ssl = use_ssl
         
         # 初始化S3客户端
         client_kwargs = {
@@ -48,67 +48,70 @@ class S3Storage(StorageInterface):
         
         self.client = boto3.client('s3', **client_kwargs)
         
-        # 确保存储桶存在
-        self._ensure_bucket_exists()
+        logger.info(f"S3存储初始化完成: {endpoint_url}")
     
-    def _ensure_bucket_exists(self):
+    def _ensure_bucket_exists(self, bucket_name: str):
         """确保存储桶存在"""
         try:
-            self.client.head_bucket(Bucket=self.bucket_name)
-            logger.info(f"S3存储桶已存在: {self.bucket_name}")
+            self.client.head_bucket(Bucket=bucket_name)
+            logger.debug(f"S3存储桶已存在: {bucket_name}")
         except ClientError as e:
             error_code = e.response['Error']['Code']
             if error_code == '404':
                 # 存储桶不存在，创建它
                 self.client.create_bucket(
-                    Bucket=self.bucket_name,
+                    Bucket=bucket_name,
                     CreateBucketConfiguration={'LocationConstraint': self.region}
                 )
-                logger.info(f"创建S3存储桶: {self.bucket_name}")
+                logger.info(f"创建S3存储桶: {bucket_name}")
             else:
                 raise
     
-    def upload_file(self, file_data: BinaryIO, file_name: str, content_type: str) -> str:
+    def upload_file(self, file_data: BinaryIO, file_name: str, content_type: str, 
+                   bucket_name: str = "default", metadata: Optional[Dict[str, Any]] = None) -> str:
         """上传文件到S3"""
         try:
-            # 生成唯一文件ID
-            file_id = str(uuid.uuid4())
-            object_key = f"{file_id}/{file_name}"
+            # 确保bucket存在
+            self._ensure_bucket_exists(bucket_name)
             
-            # 准备元数据
+            # 生成唯一文件ID作为对象键
+            file_id = str(uuid.uuid4())
+            object_key = file_id  # 直接使用file_id作为对象键
+            
+            # 准备metadata，包含原始文件名
             s3_metadata = {
-                'Content-Type': content_type,
                 'original-filename': file_name
             }
-            
+            if metadata:
+                s3_metadata.update(metadata)
+
             # 上传文件到S3
             self.client.upload_fileobj(
                 file_data,
-                self.bucket_name,
+                bucket_name,
                 object_key,
                 ExtraArgs={
-                    'Metadata': s3_metadata,
-                    'ContentType': content_type
+                    'ContentType': content_type,
+                    'Metadata': s3_metadata
                 }
             )
             
-            logger.info(f"文件上传成功: {file_id}")
+            logger.info(f"文件上传成功: {bucket_name}/{object_key}")
             return file_id
             
         except Exception as e:
             logger.error(f"文件上传失败: {e}")
             raise
     
-    def download_file(self, file_id: str) -> Optional[BinaryIO]:
+    def download_file(self, file_id: str, bucket_name: str = "default") -> Optional[BinaryIO]:
         """从S3下载文件"""
         try:
-            # 构造对象键（假设格式为 file_id/filename）
-            # 这里需要根据实际存储路径调整
-            object_key = f"{file_id}/"
+            # 构造对象键
+            object_key = file_id
             
             # 获取文件
             response = self.client.get_object(
-                Bucket=self.bucket_name,
+                Bucket=bucket_name,
                 Key=object_key
             )
             
@@ -116,92 +119,86 @@ class S3Storage(StorageInterface):
             
         except ClientError as e:
             if e.response['Error']['Code'] == 'NoSuchKey':
-                logger.warning(f"文件不存在: {file_id}")
+                logger.warning(f"文件不存在: {bucket_name}/{file_id}")
                 return None
             else:
                 logger.error(f"下载文件失败: {e}")
                 raise
     
-    def delete_file(self, file_id: str) -> bool:
+    def delete_file(self, file_id: str, bucket_name: str = "default") -> bool:
         """删除S3文件"""
         try:
             # 构造对象键
-            object_key = f"{file_id}/"
+            object_key = file_id
             
             self.client.delete_object(
-                Bucket=self.bucket_name,
+                Bucket=bucket_name,
                 Key=object_key
             )
             
-            logger.info(f"文件删除成功: {file_id}")
+            logger.info(f"文件删除成功: {bucket_name}/{file_id}")
             return True
             
         except ClientError as e:
             logger.error(f"删除文件失败: {e}")
             return False
     
-    def get_file_url(self, file_id: str, expires_in: Optional[int] = None) -> Optional[str]:
+    def get_file_url(self, file_id: str, bucket_name: str = "default", expires_in: Optional[int] = None) -> Optional[str]:
         """获取文件访问URL"""
         try:
             # 构造对象键
-            object_key = f"{file_id}/"
+            object_key = file_id
             
             # 生成预签名URL
             url = self.client.generate_presigned_url(
                 'get_object',
                 Params={
-                    'Bucket': self.bucket_name,
+                    'Bucket': bucket_name,
                     'Key': object_key
                 },
                 ExpiresIn=expires_in or 3600  # 默认1小时
             )
-            
             return url
             
         except Exception as e:
-            logger.error(f"生成文件URL失败: {e}")
+            logger.error(f"获取文件URL失败: {e}")
             return None
     
-    def file_exists(self, file_id: str) -> bool:
+    def file_exists(self, file_id: str, bucket_name: str = "default") -> bool:
         """检查文件是否存在"""
         try:
             # 构造对象键
-            object_key = f"{file_id}/"
+            object_key = file_id
             
-            self.client.head_object(
-                Bucket=self.bucket_name,
-                Key=object_key
-            )
+            self.client.head_object(Bucket=bucket_name, Key=object_key)
             return True
-            
         except ClientError as e:
             if e.response['Error']['Code'] == '404':
                 return False
             else:
-                logger.error(f"检查文件存在性失败: {e}")
+                logger.error(f"检查文件存在失败: {e}")
                 return False
     
-    def get_file_metadata(self, file_id: str) -> Optional[Dict[str, Any]]:
+    def get_file_metadata(self, file_id: str, bucket_name: str = "default") -> Optional[Dict[str, Any]]:
         """获取文件元数据"""
         try:
             # 构造对象键
-            object_key = f"{file_id}/"
+            object_key = file_id
             
-            response = self.client.head_object(
-                Bucket=self.bucket_name,
-                Key=object_key
-            )
+            response = self.client.head_object(Bucket=bucket_name, Key=object_key)
+            
+            # 获取自定义metadata
+            custom_metadata = response.get('Metadata', {})
             
             return {
-                'content_type': response.get('ContentType'),
-                'content_length': response.get('ContentLength'),
-                'last_modified': response.get('LastModified'),
-                'metadata': response.get('Metadata', {})
+                'file_id': file_id,
+                'bucket_name': bucket_name,
+                'file_size': response['ContentLength'],
+                'last_modified': response['LastModified'],
+                'content_type': response['ContentType'],
+                'original_filename': custom_metadata.get('original-filename', ''),
+                'metadata': custom_metadata
             }
-            
-        except ClientError as e:
-            if e.response['Error']['Code'] == '404':
-                return None
-            else:
-                logger.error(f"获取文件元数据失败: {e}")
-                return None 
+        except Exception as e:
+            logger.error(f"获取文件元数据失败: {e}")
+            return None 

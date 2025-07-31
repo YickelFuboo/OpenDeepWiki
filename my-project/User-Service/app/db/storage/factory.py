@@ -3,7 +3,7 @@
 """
 
 import logging
-from typing import Optional
+from typing import Optional, BinaryIO, Dict, Any
 from config.settings import get_settings
 from .base import StorageInterface
 from .s3.storage import S3Storage
@@ -20,6 +20,7 @@ def init_storage():
     """初始化存储实例"""
     global _storage_instance
     
+    from config.settings import get_settings
     settings = get_settings()
     
     try:
@@ -29,11 +30,10 @@ def init_storage():
             if not settings.storage.s3.endpoint_url:
                 raise ValueError("S3存储必须配置S3_ENDPOINT_URL")
             _storage_instance = S3Storage(
-                bucket_name=settings.storage.s3.bucket_name,
                 region=settings.storage.s3.region,
+                endpoint_url=settings.storage.s3.endpoint_url,
                 access_key_id=settings.storage.s3.access_key_id,
                 secret_access_key=settings.storage.s3.secret_access_key,
-                endpoint_url=settings.storage.s3.endpoint_url,
                 use_ssl=settings.storage.s3.use_ssl
             )
         elif storage_type == "minio":
@@ -41,7 +41,6 @@ def init_storage():
                 endpoint=settings.storage.minio.endpoint,
                 access_key=settings.storage.minio.access_key,
                 secret_key=settings.storage.minio.secret_key,
-                bucket_name=settings.storage.minio.bucket_name,
                 secure=settings.storage.minio.secure
             )
         elif storage_type == "local":
