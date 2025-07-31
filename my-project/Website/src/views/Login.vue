@@ -51,6 +51,13 @@
           </el-link>
         </div>
       </el-form>
+      
+      <!-- OAuth登录组件 -->
+      <OAuthLogin 
+        :show-phone-login="true"
+        @success="handleOAuthSuccess"
+        @error="handleOAuthError"
+      />
     </div>
   </div>
 </template>
@@ -60,6 +67,7 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
+import OAuthLogin from '@/components/auth/OAuthLogin.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -97,6 +105,18 @@ const handleLogin = async () => {
     console.error('登录失败:', error)
     ElMessage.error('登录失败，请检查用户名和密码')
   }
+}
+
+// OAuth登录成功处理
+const handleOAuthSuccess = (data: any) => {
+  ElMessage.success('OAuth登录成功')
+  router.push('/')
+}
+
+// OAuth登录失败处理
+const handleOAuthError = (error: any) => {
+  console.error('OAuth登录失败:', error)
+  ElMessage.error('OAuth登录失败')
 }
 </script>
 
