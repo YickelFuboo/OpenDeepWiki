@@ -3,10 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from src.core.database import get_db
-from src.core.auth import get_current_active_user, require_user
-from src.mem0.mem0_rag import Mem0Rag
-from src.models.user import User
+from app.core.database import get_db
+from app.core.simple_auth import get_current_active_user, require_user, SimpleUserContext
+from app.mem0.mem0_rag import Mem0Rag
 
 mem0_router = APIRouter()
 
@@ -16,7 +15,7 @@ mem0_router = APIRouter()
 async def process_warehouse_mem0(
     warehouse_id: str,
     background_tasks: BackgroundTasks,
-    current_user: User = Depends(get_current_active_user),
+    current_user: SimpleUserContext = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """处理仓库的Mem0嵌入"""
@@ -45,7 +44,7 @@ async def process_warehouse_mem0(
 @require_user()
 async def get_mem0_status(
     warehouse_id: str,
-    current_user: User = Depends(get_current_active_user),
+    current_user: SimpleUserContext = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """获取Mem0处理状态"""
@@ -88,7 +87,7 @@ async def search_mem0(
     warehouse_id: str,
     limit: int = 5,
     min_relevance: float = 0.3,
-    current_user: User = Depends(get_current_active_user),
+    current_user: SimpleUserContext = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """搜索Mem0内容"""

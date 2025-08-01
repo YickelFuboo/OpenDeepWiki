@@ -5,11 +5,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
-from src.conf.settings import settings
-from src.core.database import engine, Base
-from src.api import api_router
-from src.infrastructure import DocumentsHelper, UserContext, ResultFilter
-from src.extensions import SitemapExtensions, DbContextExtensions
+from app.conf.settings import settings
+from app.core.database import engine, Base
+from app.api import api_router
+from app.infrastructure import DocumentsHelper, ResultFilter
+from app.extensions import SitemapExtensions, DbContextExtensions
 
 
 @asynccontextmanager
@@ -52,13 +52,7 @@ async def result_filter_middleware(request: Request, call_next):
     """结果过滤器中间件"""
     return await ResultFilter.process_response(request, call_next)
 
-# 添加用户上下文中间件
-@app.middleware("http")
-async def user_context_middleware(request: Request, call_next):
-    """用户上下文中间件"""
-    # 这里可以添加用户上下文处理逻辑
-    response = await call_next(request)
-    return response
+
 
 # 配置数据库上下文
 DbContextExtensions.add_db_context(app)

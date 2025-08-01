@@ -4,10 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List
 import io
 
-from src.core.database import get_db
-from src.core.auth import get_current_user
-from src.models.user import User
-from src.services.warehouse_service import WarehouseService
+from app.core.database import get_db
+from app.core.simple_auth import get_current_user, SimpleUserContext
+
+from app.services.warehouse_service import WarehouseService
 from src.services.warehouse_permission_service import WarehousePermissionService
 from src.services.warehouse_upload_service import WarehouseUploadService
 from src.services.warehouse_content_service import WarehouseContentService
@@ -28,7 +28,7 @@ router = APIRouter(prefix="/api/warehouse", tags=["仓库管理"])
 async def create_warehouse(
     create_dto: CreateWarehouseDto,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: SimpleUserContext = Depends(get_current_user)
 ):
     """创建仓库"""
     warehouse_service = WarehouseService(db)
@@ -40,7 +40,7 @@ async def create_warehouse(
 async def get_warehouse(
     warehouse_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: SimpleUserContext = Depends(get_current_user)
 ):
     """获取仓库详情"""
     warehouse_service = WarehouseService(db)
@@ -55,7 +55,7 @@ async def update_warehouse(
     warehouse_id: str,
     update_dto: UpdateWarehouseDto,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: SimpleUserContext = Depends(get_current_user)
 ):
     """更新仓库"""
     warehouse_service = WarehouseService(db)
@@ -69,7 +69,7 @@ async def update_warehouse(
 async def delete_warehouse(
     warehouse_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: SimpleUserContext = Depends(get_current_user)
 ):
     """删除仓库"""
     warehouse_service = WarehouseService(db)
@@ -84,7 +84,7 @@ async def delete_warehouse(
 async def check_warehouse_permission(
     warehouse_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: SimpleUserContext = Depends(get_current_user)
 ):
     """检查仓库权限"""
     permission_service = WarehousePermissionService(db)
@@ -104,15 +104,14 @@ async def upload_warehouse(
     repository_name: str = Form(...),
     file: Optional[UploadFile] = File(None),
     file_url: Optional[str] = Form(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_db)
 ):
     """上传仓库"""
     upload_service = WarehouseUploadService(db)
     return await upload_service.upload_and_submit_warehouse(
         organization=organization,
         repository_name=repository_name,
-        user_id=current_user.id,
+        user_id="default",
         file=file,
         file_url=file_url
     )
@@ -121,12 +120,11 @@ async def upload_warehouse(
 @router.post("/{warehouse_id}/submit")
 async def submit_warehouse(
     warehouse_id: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_db)
 ):
     """提交仓库处理"""
     upload_service = WarehouseUploadService(db)
-    return await upload_service.submit_warehouse(warehouse_id, current_user.id)
+    return await upload_service.submit_warehouse(warehouse_id, "default")
 
 
 @router.post("/custom-submit")
@@ -135,8 +133,7 @@ async def custom_submit_warehouse(
     repository_name: str = Form(...),
     git_url: str = Form(...),
     branch: str = Form("main"),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_db)
 ):
     """自定义提交仓库"""
     upload_service = WarehouseUploadService(db)
@@ -145,7 +142,7 @@ async def custom_submit_warehouse(
         repository_name=repository_name,
         git_url=git_url,
         branch=branch,
-        user_id=current_user.id
+        user_id="default"
     )
 
 

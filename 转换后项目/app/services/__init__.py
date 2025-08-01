@@ -1,10 +1,5 @@
 # 服务模块初始化文件
 
-from .user_service import UserService
-from .role_service import RoleService
-from .permission_service import PermissionService
-from .menu_service import MenuService
-from .auth_service import AuthService
 from .statistics_service import StatisticsService
 from .app_config_service import AppConfigService
 from .git_service import GitService
@@ -27,11 +22,6 @@ from .document_service import DocumentService
 
 __all__ = [
     # 基础服务
-    "UserService",
-    "RoleService", 
-    "PermissionService",
-    "MenuService",
-    "AuthService",
     "StatisticsService",
     "AppConfigService",
     "GitService",

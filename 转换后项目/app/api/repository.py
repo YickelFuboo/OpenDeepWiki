@@ -2,11 +2,10 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.database import get_db
-from src.core.auth import get_current_active_user, require_user
-from src.dto.repository_dto import CreateRepositoryDto, UpdateRepositoryDto, RepositoryInfoDto
-from src.services.repository_service import RepositoryService
-from src.models.user import User
+from app.core.database import get_db
+from app.core.simple_auth import get_current_active_user, require_user, SimpleUserContext
+from app.dto.repository_dto import CreateRepositoryDto, UpdateRepositoryDto, RepositoryInfoDto
+from app.services.repository_service import RepositoryService
 
 repository_router = APIRouter()
 
@@ -17,7 +16,7 @@ async def get_repository_list(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(10, ge=1, le=100, description="每页数量"),
     keyword: str = Query(None, description="搜索关键词"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: SimpleUserContext = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """获取仓库列表"""
@@ -33,7 +32,7 @@ async def get_repository_list(
 @require_user()
 async def create_repository(
     create_repository_dto: CreateRepositoryDto,
-    current_user: User = Depends(get_current_active_user),
+    current_user: SimpleUserContext = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """创建仓库"""
@@ -55,7 +54,7 @@ async def create_repository(
 @require_user()
 async def get_repository(
     repository_id: str,
-    current_user: User = Depends(get_current_active_user),
+    current_user: SimpleUserContext = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """获取仓库详情"""
@@ -76,7 +75,7 @@ async def get_repository(
 async def update_repository(
     repository_id: str,
     update_repository_dto: UpdateRepositoryDto,
-    current_user: User = Depends(get_current_active_user),
+    current_user: SimpleUserContext = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """更新仓库"""
@@ -103,7 +102,7 @@ async def update_repository(
 @require_user()
 async def delete_repository(
     repository_id: str,
-    current_user: User = Depends(get_current_active_user),
+    current_user: SimpleUserContext = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """删除仓库"""

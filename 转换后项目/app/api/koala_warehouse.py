@@ -2,16 +2,15 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.database import get_db
-from src.core.auth import get_current_active_user, require_user
-from src.koala_warehouse.warehouse_classify import WarehouseClassify, ClassifyType
-from src.koala_warehouse.mini_map_service import MiniMapService
-from src.koala_warehouse.overview.overview_service import OverviewService
-from src.koala_warehouse.generate_think_catalogue.generate_think_catalogue_service import GenerateThinkCatalogueService
-from src.services.kernel_factory import KernelFactory
-from src.models.user import User
-from src.models.warehouse import Warehouse
-from src.conf.settings import settings
+from app.core.database import get_db
+from app.core.simple_auth import get_current_active_user, require_user, SimpleUserContext
+from app.koala_warehouse.warehouse_classify import WarehouseClassify, ClassifyType
+from app.koala_warehouse.mini_map_service import MiniMapService
+from app.koala_warehouse.overview.overview_service import OverviewService
+from app.koala_warehouse.generate_think_catalogue.generate_think_catalogue_service import GenerateThinkCatalogueService
+from app.services.kernel_factory import KernelFactory
+from app.models.warehouse import Warehouse
+from app.conf.settings import settings
 
 koala_warehouse_router = APIRouter()
 
@@ -21,7 +20,7 @@ koala_warehouse_router = APIRouter()
 async def classify_warehouse(
     catalog: str,
     readme: str,
-    current_user: User = Depends(get_current_active_user),
+    current_user: SimpleUserContext = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """仓库分类"""
@@ -59,7 +58,7 @@ async def classify_warehouse(
 async def generate_mini_map(
     catalogue: str,
     warehouse_id: str,
-    current_user: User = Depends(get_current_active_user),
+    current_user: SimpleUserContext = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """生成知识图谱"""

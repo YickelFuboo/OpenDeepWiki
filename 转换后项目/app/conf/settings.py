@@ -49,17 +49,7 @@ class GiteeSettings(BaseSettings):
         env_prefix = "GITEE_"
 
 
-class JwtSettings(BaseSettings):
-    """JWT配置"""
-    secret_key: str = Field(default="your-secret-key", description="JWT密钥")
-    algorithm: str = Field(default="HS256", description="JWT算法")
-    access_token_expire_minutes: int = Field(default=30, description="访问令牌过期时间(分钟)")
-    issuer: str = Field(default="KoalaWiki", description="颁发者")
-    audience: str = Field(default="KoalaWiki", description="接收者")
-    refresh_token_expire_minutes: int = Field(default=60 * 24 * 7, description="刷新令牌过期时间(分钟)")
-    
-    class Config:
-        env_prefix = "JWT_"
+
 
 
 class DocumentSettings(BaseSettings):
@@ -110,7 +100,6 @@ class Settings(BaseSettings):
     mem0: Mem0Settings = Mem0Settings()
     github: GithubSettings = GithubSettings()
     gitee: GiteeSettings = GiteeSettings()
-    jwt: JwtSettings = JwtSettings()
     document: DocumentSettings = DocumentSettings()
     git: GitSettings = GitSettings()
     database: DatabaseSettings = DatabaseSettings()

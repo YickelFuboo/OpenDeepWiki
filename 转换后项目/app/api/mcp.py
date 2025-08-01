@@ -2,10 +2,9 @@ from typing import Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.database import get_db
-from src.core.auth import get_current_active_user, require_user
-from src.mcp.mcp_extensions import MCPExtensions
-from src.models.user import User
+from app.core.database import get_db
+from app.core.simple_auth import get_current_active_user, require_user, SimpleUserContext
+from app.mcp.mcp_extensions import MCPExtensions
 
 mcp_router = APIRouter()
 
@@ -15,7 +14,7 @@ mcp_router = APIRouter()
 async def list_tools(
     owner: str,
     name: str,
-    current_user: User = Depends(get_current_active_user),
+    current_user: SimpleUserContext = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """获取工具列表"""
@@ -48,7 +47,7 @@ async def list_tools(
 async def call_tool(
     tool_name: str,
     parameters: Dict[str, Any],
-    current_user: User = Depends(get_current_active_user),
+    current_user: SimpleUserContext = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """调用工具"""
@@ -76,7 +75,7 @@ async def generate_document(
     owner: str,
     name: str,
     question: str,
-    current_user: User = Depends(get_current_active_user),
+    current_user: SimpleUserContext = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """生成文档"""
