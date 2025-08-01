@@ -19,7 +19,7 @@ def test_imports():
     
     try:
         # 测试核心模块
-        from src.core.config import settings
+        from src.conf.settings import settings
         print("✅ 配置模块导入成功")
         
         from src.core.database import engine, Base
@@ -65,7 +65,7 @@ def test_config():
     print("\n🔍 测试配置加载...")
     
     try:
-        from src.core.config import settings
+        from src.conf.settings import settings
         
         # 检查必要的配置项
         assert hasattr(settings, 'database')

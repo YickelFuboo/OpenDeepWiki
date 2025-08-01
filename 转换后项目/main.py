@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
-from src.core.config import settings
+from src.conf.settings import settings
 from src.core.database import engine, Base
 from src.api import api_router
 from src.infrastructure import DocumentsHelper, UserContext, ResultFilter
