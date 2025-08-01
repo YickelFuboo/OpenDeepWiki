@@ -1,7 +1,6 @@
 # 服务模块初始化文件
 
-from .statistics_service import StatisticsService
-from .app_config_service import AppConfigService
+
 from .git_service import GitService
 from .repository_service import RepositoryService
 from .document_catalog_service import DocumentCatalogService
@@ -22,8 +21,6 @@ from .document_service import DocumentService
 
 __all__ = [
     # 基础服务
-    "StatisticsService",
-    "AppConfigService",
     "GitService",
     "RepositoryService",
     "DocumentCatalogService",

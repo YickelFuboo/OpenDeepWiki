@@ -4,12 +4,12 @@ from datetime import datetime, timedelta
 from typing import Optional
 from loguru import logger
 
-from src.core.database import AsyncSessionLocal
-from src.services.statistics_service import StatisticsService
+from app.core.database import AsyncSessionLocal
 
+# 移除StatisticsBackgroundService，因为它依赖于已删除的StatisticsService
 
-class StatisticsBackgroundService:
-    """统计后台服务"""
+class MiniMapBackgroundService:
+    """知识图谱后台服务"""
     
     def __init__(self):
         self.running = False
@@ -17,7 +17,7 @@ class StatisticsBackgroundService:
     async def start(self):
         """启动后台服务"""
         self.running = True
-        logger.info("统计后台服务启动")
+        logger.info("知识图谱后台服务启动")
         
         while self.running:
             try:
@@ -26,158 +26,34 @@ class StatisticsBackgroundService:
                 delay = (next_run_time - datetime.utcnow()).total_seconds()
                 
                 if delay > 0:
-                    logger.info(f"下次统计任务将在 {next_run_time} 运行")
+                    logger.info(f"下次知识图谱任务将在 {next_run_time} 运行")
                     await asyncio.sleep(delay)
                 
                 if not self.running:
                     break
                 
-                # 执行统计任务
-                await self.execute_statistics_task()
-                
-            except Exception as e:
-                logger.error(f"统计后台服务发生错误: {e}")
-                # 发生错误时等待1小时后重试
-                await asyncio.sleep(3600)
-        
-        logger.info("统计后台服务停止")
-    
-    async def stop(self):
-        """停止后台服务"""
-        self.running = False
-    
-    async def execute_statistics_task(self):
-        """执行统计任务"""
-        async with AsyncSessionLocal() as db:
-            statistics_service = StatisticsService(db)
-            
-            try:
-                logger.info("开始执行统计任务")
-                
-                # 生成昨天的统计数据
-                yesterday = datetime.utcnow().date() - timedelta(days=1)
-                success = await self.generate_daily_statistics(statistics_service, yesterday)
-                
-                if success:
-                    logger.info(f"统计任务执行成功，日期: {yesterday.strftime('%Y-%m-%d')}")
-                else:
-                    logger.warning(f"统计任务执行失败，日期: {yesterday.strftime('%Y-%m-%d')}")
-                
-                # 清理旧的访问记录（保留90天）
-                await self.cleanup_old_access_records(db)
-                
-            except Exception as e:
-                logger.error(f"执行统计任务时发生错误: {e}")
-    
-    async def generate_daily_statistics(self, statistics_service: StatisticsService, date: datetime.date) -> bool:
-        """生成每日统计数据"""
-        try:
-            # 这里可以添加具体的统计逻辑
-            # 例如：页面访问统计、API调用统计、用户活动统计等
-            
-            # 示例：记录页面访问统计
-            await statistics_service.record_statistics(
-                stat_type="page_view",
-                data={
-                    "page_views": 100,  # 这里应该是从实际数据中计算得出
-                    "unique_visitors": 50,
-                    "total_time": 3600
-                },
-                date=date.strftime("%Y-%m-%d")
-            )
-            
-            # 示例：记录API调用统计
-            await statistics_service.record_statistics(
-                stat_type="api_call",
-                data={
-                    "total_calls": 200,
-                    "success_calls": 180,
-                    "error_calls": 20,
-                    "avg_response_time": 150.5
-                },
-                date=date.strftime("%Y-%m-%d")
-            )
-            
-            # 示例：记录用户活动统计
-            await statistics_service.record_statistics(
-                stat_type="user_activity",
-                data={
-                    "active_users": 30,
-                    "new_users": 5,
-                    "total_users": 100
-                },
-                date=date.strftime("%Y-%m-%d")
-            )
-            
-            return True
-            
-        except Exception as e:
-            logger.error(f"生成每日统计数据时发生错误: {e}")
-            return False
-    
-    async def cleanup_old_access_records(self, db):
-        """清理旧的访问记录"""
-        try:
-            cutoff_date = datetime.utcnow().date() - timedelta(days=90)
-            # 这里可以添加清理逻辑
-            logger.info(f"清理了旧访问记录，截止日期: {cutoff_date}")
-        except Exception as e:
-            logger.error(f"清理旧访问记录时发生错误: {e}")
-    
-    def get_next_run_time(self) -> datetime:
-        """获取下次运行时间"""
-        now = datetime.utcnow()
-        
-        # 每天凌晨1点执行统计任务
-        next_run = now.replace(hour=1, minute=0, second=0, microsecond=0)
-        
-        # 如果当前时间已经过了今天的运行时间，则安排明天运行
-        if now >= next_run:
-            next_run = next_run + timedelta(days=1)
-        
-        return next_run
-
-
-class MiniMapBackgroundService:
-    """小地图后台服务"""
-    
-    def __init__(self):
-        self.running = False
-    
-    async def start(self):
-        """启动后台服务"""
-        self.running = True
-        logger.info("小地图后台服务启动")
-        
-        while self.running:
-            try:
-                # 每30分钟执行一次
-                await asyncio.sleep(1800)
-                
-                if not self.running:
-                    break
-                
+                # 执行知识图谱任务
                 await self.execute_minimap_task()
                 
             except Exception as e:
-                logger.error(f"小地图后台服务发生错误: {e}")
-                await asyncio.sleep(300)  # 5分钟后重试
+                logger.error(f"知识图谱后台服务发生错误: {e}")
+                # 发生错误时等待1小时后重试
+                await asyncio.sleep(3600)
         
-        logger.info("小地图后台服务停止")
+        logger.info("知识图谱后台服务停止")
     
     async def stop(self):
         """停止后台服务"""
         self.running = False
     
     async def execute_minimap_task(self):
-        """执行小地图任务"""
+        """执行知识图谱任务"""
         try:
-            logger.info("开始执行小地图任务")
-            # 这里可以添加小地图生成逻辑
-            await asyncio.sleep(60)  # 模拟任务执行时间
-            logger.info("小地图任务执行完成")
+            logger.info("开始执行知识图谱任务")
+            # 这里可以添加具体的知识图谱生成逻辑
+            logger.info("知识图谱任务执行完成")
         except Exception as e:
-            logger.error(f"执行小地图任务时发生错误: {e}")
+            logger.error(f"执行知识图谱任务时发生错误: {e}")
 
 
 class AccessLogBackgroundService:

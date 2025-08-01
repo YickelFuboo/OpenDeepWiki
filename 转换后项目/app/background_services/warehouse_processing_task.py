@@ -6,18 +6,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from loguru import logger
 
-from src.models.warehouse import Warehouse, WarehouseStatus
-from src.models.document import Document
-from src.services.statistics_service import StatisticsService
-from src.conf.settings import settings
+from app.models.warehouse import Warehouse, WarehouseStatus
+from app.models.document import Document
+from app.conf.settings import settings
 
 
 class WarehouseProcessingTask:
     """仓库处理任务"""
     
-    def __init__(self, db: AsyncSession, statistics_service: StatisticsService):
+    def __init__(self, db: AsyncSession):
         self.db = db
-        self.statistics_service = statistics_service
     
     async def execute_async(self, stopping_token: Optional[asyncio.CancelledError] = None):
         """执行仓库处理任务"""

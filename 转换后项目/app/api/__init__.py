@@ -1,9 +1,7 @@
 from fastapi import APIRouter
 from .repository import repository_router
 from .warehouse import warehouse_router
-from .statistics import statistics_router
 from .ai import ai_router
-from .app_config import app_config_router
 from .code_map import code_map_router
 from .document_catalog import document_catalog_router
 from .mcp import mcp_router
@@ -17,9 +15,7 @@ api_router = APIRouter()
 # 包含子路由
 api_router.include_router(repository_router, prefix="/repository", tags=["仓库"])
 api_router.include_router(warehouse_router, prefix="/warehouse", tags=["知识仓库"])
-api_router.include_router(statistics_router, prefix="/statistics", tags=["统计"])
 api_router.include_router(ai_router, prefix="/ai", tags=["AI服务"])
-api_router.include_router(app_config_router, prefix="/appconfig", tags=["应用配置"])
 api_router.include_router(code_map_router, prefix="/codemap", tags=["代码映射"])
 api_router.include_router(document_catalog_router, prefix="/documentcatalog", tags=["文档目录"])
 api_router.include_router(mcp_router, prefix="/mcp", tags=["MCP服务"])

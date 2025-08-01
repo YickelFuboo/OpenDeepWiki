@@ -8,8 +8,7 @@ from .document_overview import DocumentOverview
 from .document_commit_record import DocumentCommitRecord
 from .mini_map import MiniMap
 from .repository import Repository
-from .statistics import Statistics
-from .app_config import AppConfig
+
 from .mcp_history import MCPHistory
 
 __all__ = [
@@ -21,7 +20,6 @@ __all__ = [
     "DocumentCommitRecord",
     "MiniMap",
     "Repository",
-    "Statistics",
-    "AppConfig",
+
     "MCPHistory",
 ] 
